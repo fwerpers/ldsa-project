@@ -1,5 +1,3 @@
-#!/Users/FWerpers/.virtualenvs/openstack/bin/python
-
 # Script for creating an Openstack instance
 
 import os
@@ -11,12 +9,12 @@ NETWORK_NAME = 'SNIC 2017/13-8 Internal IPv4 Network'
 
 def create_connection():
     auth_args = {
-        'auth_url': 'https://c3se.cloud.snic.se:5000/v3',
-        'project_name': 'SNIC 2017/13-8',
-        'user_domain_name': 'snic',
-        'project_domain_name': 'snic',
-        'username': 's8770',
-        'password': os.environ['SNIC_PW']
+        'auth_url': os.environ['OS_AUTH_URL'],
+        'project_name': os.environ['OS_PROJECT_NAME'],
+        'user_domain_name': os.environ['OS_USER_DOMAIN_NAME'],
+        'project_domain_name': os.environ['OS_USER_DOMAIN_NAME'],
+        'username': os.environ['OS_USERNAME'],
+        'password': os.environ['OS_PASSWORD']
     }
 
     conn = connection.Connection(**auth_args)
@@ -59,7 +57,7 @@ def delete_instance(conn, instance_name):
 
 def main():
     conn = create_connection()
-    #server = create_instance(conn, 'felker_python')
+    server = create_instance(conn, 'felker')
     #delete_instance(conn, 'felker_python')
     #help(conn.network)
     #help(conn.compute)
