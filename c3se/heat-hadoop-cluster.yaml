@@ -12,7 +12,7 @@ parameters:
   image_id:
     type: string
     description: ID of image to use for servers
-    default: 420ade36-9b00-41a2-86bb-82230d35e8d1
+    default: be6ea020-bca2-4d10-b547-6357d9cf1e29
   admin_user:
     type: string
     description: Username of admin user
