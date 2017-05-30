@@ -3,3 +3,5 @@ __pycache__/
 
 hpc2n_credentials.sh
 c3se_credentials.sh
+
+*.pem
