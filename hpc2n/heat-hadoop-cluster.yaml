@@ -20,7 +20,7 @@ parameters:
   flavor:
     type: string
     description: Flavor to use for servers
-    default: ssc.large
+    default: ssc.small
   public_net_id:
     type: string
     description: >
