@@ -94,7 +94,7 @@ resources:
   nodes:
     type: OS::Heat::ResourceGroup
     properties:
-      count: 2
+      count: 1
       resource_def:
         type: heat-datanode.yaml
         properties:
