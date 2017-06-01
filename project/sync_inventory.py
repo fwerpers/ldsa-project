@@ -56,6 +56,7 @@ $node_hosts
 
 [hadoop-master:vars]
 nodesfile=$nodes_path
+key_path=$key_path
 
 [hadoop-data:vars]
 nodesfile=$nodes_path""")
@@ -95,9 +96,9 @@ $nodes
         master_host = self.get_host_entry(self.get_master_public_ip())
         node_hosts = [self.get_host_entry(ipaddress) for ipaddress in self.get_datanode_private_ips()]
         node_hosts = '\n'.join(node_hosts)
-        print(node_hosts)
         nodes_path = os.path.abspath(os.path.join('ansible','inventory', 'nodes-pro'))
-        return dedent(self.hosts_output.substitute(master_host=master_host, nodes_path=nodes_path, node_hosts=node_hosts))
+        key_path = utils.get_key_path()
+        return dedent(self.hosts_output.substitute(master_host=master_host, nodes_path=nodes_path, node_hosts=node_hosts, key_path=key_path))
 
     # Ansible group_vars nodes
     def get_node_entry(self, hostname, ipaddress):
