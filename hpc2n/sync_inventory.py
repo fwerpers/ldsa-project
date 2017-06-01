@@ -69,7 +69,9 @@ $nodes
         self.load_heat_output()
 
     def load_heat_output(self):
-        json_data = subprocess.Popen("openstack stack output show -f json --all test", shell=True, stdout=subprocess.PIPE).stdout.read()
+        with open('stack_name', 'r') as f:
+            stack_name = f.readline().strip()
+        json_data = subprocess.Popen("openstack stack output show -f json --all " + stack_name, shell=True, stdout=subprocess.PIPE).stdout.read()
         self.heat_output = parse_stack_info(json_data)
 
     def get_master_public_ip(self):
