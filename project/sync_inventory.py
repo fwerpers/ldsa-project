@@ -13,6 +13,8 @@ import json
 from string import Template
 from textwrap import dedent
 import subprocess
+import utils
+import os
 
 def parse_stack_info(string):
 
@@ -69,8 +71,7 @@ $nodes
         self.load_heat_output()
 
     def load_heat_output(self):
-        with open('stack_name', 'r') as f:
-            stack_name = f.readline().strip()
+        stack_name = utils.get_stack_name()
         json_data = subprocess.Popen("openstack stack output show -f json --all " + stack_name, shell=True, stdout=subprocess.PIPE).stdout.read()
         self.heat_output = parse_stack_info(json_data)
 
@@ -116,8 +117,9 @@ def main():
 ##    print "hadoop master private IP: " + heat_inv.get_master_private_ip()
 ##    print "hadoop datanode private IP: " + ', '.join(heat_inv.get_datanode_private_ips())
 ##    print "hadoop datanode public IP: " + ', '.join(heat_inv.get_datanode_public_ips())
-    inventory_file = open('hosts-pro', 'w')
-    nodes_file = open('nodes-pro', 'w')
+    inventory_path = os.path.join('ansible','inventory')
+    inventory_file = open(os.path.join(inventory_path, 'hosts-pro'), 'w')
+    nodes_file = open(os.path.join(inventory_path, 'nodes-pro'), 'w')
     inventory_file.write(heat_inv.get_hosts_output())
     nodes_file.write(heat_inv.get_nodes_output())
     inventory_file.close()

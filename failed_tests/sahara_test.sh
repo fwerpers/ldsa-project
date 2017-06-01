@@ -1,1 +1,0 @@
-openstack dataprocessing cluster list

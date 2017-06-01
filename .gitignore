@@ -7,3 +7,6 @@ c3se_credentials.sh
 *.pem
 
 *.retry
+
+hosts-pro
+nodes-pro

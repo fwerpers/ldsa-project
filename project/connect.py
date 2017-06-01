@@ -1,12 +1,6 @@
 import subprocess
 import json
-
-# stack_name = ''
-#
-# with open('inventory.json', 'r') as f:
-#     stack_info = json.load(f)
-#     if 'stack_name' in a:
-#         stack_name = stack_info['stack_name']
+import utils
 
 def parse_stack_info(string):
 
@@ -27,13 +21,13 @@ def parse_stack_info(string):
     return(parse(base_dict))
 
 
-with open('stack_name', 'r') as f:
-    stack_name = f.readline().strip()
-    
+stack_name = utils.get_stack_name()
+
 json_data = subprocess.Popen("openstack stack output show -f json --all " + stack_name, shell=True, stdout=subprocess.PIPE).stdout.read()
 stack_info = parse_stack_info(json_data)
 
 ip = stack_info.get('hadoop_master_public_ip').get('output_value')
-args = ['ssh', 'ubuntu@' + ip, '-i', 'hpc2n_key.pem']
+key_path = utils.get_key_path()
+args = ['ssh', 'ubuntu@' + ip, '-i', key_path]
 print(args)
 subprocess.call(args)
