@@ -1,0 +1,20 @@
+---
+- name: Install hadoop master node
+  hosts: hadoop-master
+  remote_user: ubuntu
+  become: yes
+
+  roles:
+    - common
+    - oraclejava8
+    - master
+
+- name: Install hadoop data nodes
+  hosts: hadoop-data
+  remote_user: ubuntu
+  become: yes
+
+  roles:
+    - common
+    - oraclejava8
+#    - data
