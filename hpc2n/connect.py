@@ -27,7 +27,9 @@ def parse_stack_info(string):
     return(parse(base_dict))
 
 
-stack_name = 'test'
+with open('stack_name', 'r') as f:
+    stack_name = f.readline().strip()
+    
 json_data = subprocess.Popen("openstack stack output show -f json --all " + stack_name, shell=True, stdout=subprocess.PIPE).stdout.read()
 stack_info = parse_stack_info(json_data)
 
