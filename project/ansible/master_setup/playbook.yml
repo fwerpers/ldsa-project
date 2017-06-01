@@ -1,0 +1,16 @@
+---
+- name: Set up master node for ansible/openstack
+  hosts: hadoop-master
+  remote_user: ubuntu
+  become: yes
+  gather_facts: False
+
+  tasks:
+  - name: Install python
+    raw: test -e /usr/bin/python || (apt-get install -y python3 python-simplejson)
+  - name: Copy Openstack password
+    lineinfile: dest=/home/ubuntu/.bashrc line="export SNIC_PW={{ lookup('env', 'SNIC_PW') }}"
+  - name: Copy private key
+    copy: src={{ key_path }} dest=/home/hadoop/.ssh/hadoop_key.pem
+  - name: Copy ansible files
+    synchronize: src={{ playbook_dir }}/slave_setup/ dest=/home/hadoop/ansible
