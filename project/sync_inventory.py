@@ -52,6 +52,7 @@ class heat_inventory:
 $master_host
 
 [hadoop-data]
+$node_hosts
 
 [hadoop-master:vars]
 nodesfile=$nodes_path
@@ -82,7 +83,9 @@ $nodes
         return(self.heat_output.get(self.hadoop_master_private_key).get('output_value'))
 
     def get_datanode_private_ips(self):
-        return(self.heat_output.get(self.hadoop_datanode_private_key).get('output_value'))
+        ip_entries = self.heat_output.get(self.hadoop_datanode_private_key).get('output_value')
+        ips = [entry[0] for entry in ip_entries]
+        return(ips)
 
     # Ansible hosts file
     def get_host_entry(self, ipaddress):
@@ -90,8 +93,11 @@ $nodes
 
     def get_hosts_output(self):
         master_host = self.get_host_entry(self.get_master_public_ip())
+        node_hosts = [self.get_host_entry(ipaddress) for ipaddress in self.get_datanode_private_ips()]
+        node_hosts = '\n'.join(node_hosts)
+        print(node_hosts)
         nodes_path = os.path.abspath(os.path.join('ansible','inventory', 'nodes-pro'))
-        return dedent(self.hosts_output.substitute(master_host=master_host, nodes_path=nodes_path))
+        return dedent(self.hosts_output.substitute(master_host=master_host, nodes_path=nodes_path, node_hosts=node_hosts))
 
     # Ansible group_vars nodes
     def get_node_entry(self, hostname, ipaddress):
