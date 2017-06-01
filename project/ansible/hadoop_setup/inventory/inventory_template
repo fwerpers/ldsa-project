@@ -1,0 +1,8 @@
+[hadoop-master]
+localhost ansible_connection=local
+
+[hadoop-data]
+$node_hosts
+
+[hadoop-data:vars]
+nodesfile=nodes
