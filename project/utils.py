@@ -13,4 +13,4 @@ def get_heat_template_path():
 def get_key_path():
     region_dir = os.environ['OS_REGION_NAME']
     key_path = os.path.join(region_dir, region_dir.lower() + '_key.pem')
-    return(key_path)
+    return(os.path.abspath(key_path))

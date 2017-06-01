@@ -44,7 +44,7 @@ class heat_inventory:
 
     # template values
     ansible_ssh_user = "ubuntu"
-    ansible_ssh_private_key_file = "hpc2n_key.pem"
+    ansible_ssh_private_key_file = utils.get_key_path()
 
     # templates
     host_entry = Template('$ipaddress ansible_connection=ssh ansible_user=$ssh_user ansible_ssh_private_key_file=$private_key_file')
@@ -54,10 +54,10 @@ $master_host
 [hadoop-data]
 
 [hadoop-master:vars]
-nodesfile=nodes-pro
+nodesfile=$nodes_path
 
 [hadoop-data:vars]
-nodesfile=nodes-pro""")
+nodesfile=$nodes_path""")
 
     node_entry = Template("""  - hostname: $hostname
     ip: $ipaddress""")
@@ -90,7 +90,8 @@ $nodes
 
     def get_hosts_output(self):
         master_host = self.get_host_entry(self.get_master_public_ip())
-        return dedent(self.hosts_output.substitute(master_host=master_host))
+        nodes_path = os.path.abspath(os.path.join('ansible','inventory', 'nodes-pro'))
+        return dedent(self.hosts_output.substitute(master_host=master_host, nodes_path=nodes_path))
 
     # Ansible group_vars nodes
     def get_node_entry(self, hostname, ipaddress):
