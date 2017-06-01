@@ -1,0 +1,1 @@
+openstack cluster list
