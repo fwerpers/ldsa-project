@@ -10,5 +10,5 @@ hadoop_rsa
 
 *.retry
 
-hosts-pro
-nodes-pro
+hosts
+nodes
