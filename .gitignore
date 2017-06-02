@@ -5,6 +5,8 @@ hpc2n_credentials.sh
 c3se_credentials.sh
 
 *.pem
+hadoop_rsa
+*.pub
 
 *.retry
 
