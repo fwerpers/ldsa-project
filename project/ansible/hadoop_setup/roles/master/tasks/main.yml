@@ -1,5 +1,5 @@
 ---
-- include_vars: "{{ nodesfile }}"
+- include_vars: file=nodes
 
 - name: Copy private key into place
   template: src=hadoop_rsa dest=/home/{{ hadoop_user }}/.ssh/hadoop_rsa owner={{ hadoop_user }} group={{ hadoop_group}} mode=0600
@@ -13,7 +13,7 @@
   register: keyscans
 
 - name: prepare known_hosts
-  lineinfile: 
+  lineinfile:
     dest=/home/{{ hadoop_user }}/.ssh/known_hosts
     create=yes
     state=present
@@ -28,7 +28,7 @@
   register: keyscan_0_0_0_0
 
 - name: add 0.0.0.0 to known_hosts for secondary namenode
-  lineinfile: 
+  lineinfile:
     dest=/home/{{ hadoop_user }}/.ssh/known_hosts
     create=yes
     state=present

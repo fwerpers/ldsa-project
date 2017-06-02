@@ -1,5 +1,6 @@
 [hadoop-master]
-130.239.81.78 ansible_connection=ssh ansible_user=ubuntu ansible_ssh_private_key_file=/Users/FWerpers/Documents/Kursmaterial/LDSA/Assignments/Project/GitHub/project/HPC2N/hpc2n_key.pem
+130.239.81.142 ansible_connection=ssh ansible_user=ubuntu ansible_ssh_private_key_file=/Users/FWerpers/Documents/Kursmaterial/LDSA/Assignments/Project/GitHub/project/HPC2N/hpc2n_key.pem
 
 [hadoop-master:vars]
 key_path=/Users/FWerpers/Documents/Kursmaterial/LDSA/Assignments/Project/GitHub/project/HPC2N/hpc2n_key.pem
+nodesfile=/Users/FWerpers/Documents/Kursmaterial/LDSA/Assignments/Project/GitHub/project/ansible/master_setup/inventory/nodes

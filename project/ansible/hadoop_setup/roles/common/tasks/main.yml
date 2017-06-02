@@ -1,5 +1,5 @@
 ---
-- include_vars: "{{ nodesfile }}"
+- include_vars: file=nodes
 
 - group: name={{ hadoop_group}} state=present
 - user: name={{ hadoop_user }} comment="Hadoop" group={{ hadoop_group}} shell=/bin/bash

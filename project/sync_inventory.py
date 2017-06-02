@@ -1,20 +1,19 @@
-#-------------------------------------------------------------------------------
-# Name:        heat_inventory
-# Purpose:
-#
-# Author:      Daniel Watrous
-#
-# Created:     10/07/2015
-# Copyright:   (c) HP 2015
-#-------------------------------------------------------------------------------
-#!/usr/bin/python
-
 import json
 from string import Template
-from textwrap import dedent
 import subprocess
 import utils
 import os
+import yaml
+
+HADOOP_MASTER_PUBLIC_KEY = "hadoop_master_public_ip"
+HADOOP_MASTER_PRIVATE_KEY = "hadoop_master_private_ip"
+HADOOP_DATANODE_PRIVATE_KEY = "nodes_private_ips"
+
+ANSIBLE_SSH_USER = "ubuntu"
+
+ANSIBLE_SSH_PRIVATE_KEY_FILE = "~/.ssh/hadoop_key.pem"
+
+HOST_TEMPLATE = Template('$ipaddress ansible_connection=ssh ansible_user=$ssh_user ansible_ssh_private_key_file=$private_key_file')
 
 def parse_stack_info(string):
 
@@ -34,107 +33,104 @@ def parse_stack_info(string):
     base_dict = json.loads(string)
     return(parse(base_dict))
 
-class heat_inventory:
-
-    # output keys
-    hadoop_master_public_key = "hadoop_master_public_ip"
-    hadoop_master_private_key = "hadoop_master_private_ip"
-    hadoop_datanode_public_key = "nodes_public_ips"
-    hadoop_datanode_private_key = "nodes_private_ips"
-
-    # template values
-    ansible_ssh_user = "ubuntu"
-    ansible_ssh_private_key_file = utils.get_key_path()
-
-    # templates
-    host_entry = Template('$ipaddress ansible_connection=ssh ansible_user=$ssh_user ansible_ssh_private_key_file=$private_key_file')
-    hosts_output = Template("""[hadoop-master]
-$master_host
-
-[hadoop-data]
-$node_hosts
-
-[hadoop-master:vars]
-nodesfile=$nodes_path
-key_path=$key_path
-
-[hadoop-data:vars]
-nodesfile=$nodes_path""")
-
-    node_entry = Template("""  - hostname: $hostname
-    ip: $ipaddress""")
-    nodes_section = Template("""---
-nodes:
-$nodes
-    """)
-    nodes_sshkeyscan = Template('ssh-keyscan -t rsa $ipaddress >> ~/.ssh/known_hosts')
-
+class InventorySyncer:
     def __init__(self):
-        self.load_heat_output()
-
-    def load_heat_output(self):
         stack_name = utils.get_stack_name()
         json_data = subprocess.Popen("openstack stack output show -f json --all " + stack_name, shell=True, stdout=subprocess.PIPE).stdout.read()
-        self.heat_output = parse_stack_info(json_data)
+        self.stack_info = parse_stack_info(json_data)
 
-    def get_master_public_ip(self):
-        return(self.heat_output.get(self.hadoop_master_public_key).get('output_value'))
+        # Remove existing host key
+        ip_address = self.stack_info.get(HADOOP_MASTER_PUBLIC_KEY).get('output_value')
+        subprocess.Popen("ssh-keygen -R " + ip_address, shell=True).wait()
 
-    def get_master_private_ip(self):
-        return(self.heat_output.get(self.hadoop_master_private_key).get('output_value'))
+        # Add host key to prevent prompt
+        subprocess.Popen("ssh-keyscan -t rsa " + ip_address + " >> ~/.ssh/known_hosts", shell=True).wait()
 
-    def get_datanode_private_ips(self):
-        ip_entries = self.heat_output.get(self.hadoop_datanode_private_key).get('output_value')
-        ips = [entry[0] for entry in ip_entries]
-        return(ips)
+    def update_master_setup_inventory(self):
+        inventory_path = os.path.join('ansible', 'master_setup', 'inventory')
+        with open(os.path.join(inventory_path, 'inventory_template'), 'r') as f:
+            template = Template(f.read())
 
-    # Ansible hosts file
-    def get_host_entry(self, ipaddress):
-        return self.host_entry.substitute(ipaddress=ipaddress, ssh_user=self.ansible_ssh_user, private_key_file=self.ansible_ssh_private_key_file)
-
-    def get_hosts_output(self):
-        master_host = self.get_host_entry(self.get_master_public_ip())
-        node_hosts = [self.get_host_entry(ipaddress) for ipaddress in self.get_datanode_private_ips()]
-        node_hosts = '\n'.join(node_hosts)
-        nodes_path = os.path.abspath(os.path.join('ansible','inventory', 'nodes-pro'))
+        # Hosts file
+        ip_address = self.stack_info.get(HADOOP_MASTER_PUBLIC_KEY).get('output_value')
         key_path = utils.get_key_path()
-        return dedent(self.hosts_output.substitute(master_host=master_host, nodes_path=nodes_path, node_hosts=node_hosts, key_path=key_path))
+        nodes_path = os.path.abspath(os.path.join(inventory_path, 'nodes'))
+        host_entry = HOST_TEMPLATE.substitute(
+            ipaddress=ip_address,
+            ssh_user=ANSIBLE_SSH_USER,
+            private_key_file=key_path
+        )
 
-    # Ansible group_vars nodes
-    def get_node_entry(self, hostname, ipaddress):
-        return self.node_entry.substitute(hostname=hostname, ipaddress=ipaddress)
+        inventory = template.substitute(
+            master_host=host_entry,
+            key_path=key_path,
+            nodes_path=nodes_path
+        )
 
-    def get_nodes_entries(self):
+        with open(os.path.join(inventory_path, 'hosts'), 'w') as f:
+            f.write(inventory)
+
+        # Nodes files
+        ip_entries = self.stack_info.get(HADOOP_DATANODE_PRIVATE_KEY).get('output_value')
         nodes = []
-        nodes.append(self.get_node_entry('hadoop-master', self.get_master_private_ip()))
-        for node in self.get_datanode_private_ips():
-            nodes.append(self.get_node_entry(node[1], node[0]))
-        return "\n".join(nodes)
+        master_private_ip = self.stack_info.get(HADOOP_MASTER_PRIVATE_KEY).get('output_value')
+        nodes.append({'hostname': 'hadoop-master', 'ip': master_private_ip})
+        for ip_entry in ip_entries:
+            nodes.append({'hostname': ip_entry[1], 'ip': ip_entry[0]})
+        nodes = {'nodes': nodes}
+        with open(os.path.join(inventory_path, 'nodes'), 'w') as f:
+            f.write(yaml.safe_dump(nodes, explicit_start=True, default_flow_style=False))
 
-    def get_nodes_output(self):
-        return self.nodes_section.substitute(nodes=self.get_nodes_entries())
+    def update_hadoop_setup_inventory(self):
+        inventory_path = os.path.join('ansible', 'hadoop_setup', 'inventory')
+        with open(os.path.join(inventory_path, 'inventory_template'), 'r') as f:
+            template = Template(f.read())
 
-    def get_node_keyscan_script(self):
+        # Hosts file
+        ip_entries = self.stack_info.get(HADOOP_DATANODE_PRIVATE_KEY).get('output_value')
+        host_entries = []
+        for ip_entry in ip_entries:
+            ip_address = ip_entry[0]
+            host_entry = HOST_TEMPLATE.substitute(
+                ipaddress=ip_address,
+                ssh_user=ANSIBLE_SSH_USER,
+                private_key_file=ANSIBLE_SSH_PRIVATE_KEY_FILE
+            )
+            host_entries.append(host_entry)
+
+        host_entries = '\n'.join(host_entries)
+        nodes_path = os.path.abspath(os.path.join(inventory_path, 'nodes'))
+        inventory = template.substitute(
+            node_hosts=host_entries,
+            nodes_path='inventory/nodes'
+        )
+
+        with open(os.path.join(inventory_path, 'hosts'), 'w') as f:
+            f.write(inventory)
+
+        # Nodes files
         nodes = []
-        nodes.append(self.nodes_sshkeyscan.substitute(ipaddress=self.get_master_public_ip()))
-        return "\n".join(nodes)
+        master_private_ip = self.stack_info.get(HADOOP_MASTER_PRIVATE_KEY).get('output_value')
+        nodes.append({'hostname': 'hadoop-master', 'ip': master_private_ip})
+        for ip_entry in ip_entries:
+            nodes.append({'hostname': ip_entry[1], 'ip': ip_entry[0]})
+        nodes = {'nodes': nodes}
+        with open(os.path.join(inventory_path, 'nodes'), 'w') as f:
+            f.write(yaml.safe_dump(nodes, explicit_start=True, default_flow_style=False))
+
+        vars_path_master = os.path.join('ansible', 'hadoop_setup', 'roles', 'master', 'vars')
+        with open(os.path.join(vars_path_master, 'nodes'), 'w') as f:
+            f.write(yaml.safe_dump(nodes, explicit_start=True, default_flow_style=False))
+        vars_path_common = os.path.join('ansible', 'hadoop_setup', 'roles', 'common', 'vars')
+        with open(os.path.join(vars_path_common, 'nodes'), 'w') as f:
+            f.write(yaml.safe_dump(nodes, explicit_start=True, default_flow_style=False))
 
 def main():
-    heat_inv = heat_inventory()
-##    print "hadoop master public IP: " + heat_inv.get_master_public_ip()
-##    print "hadoop master private IP: " + heat_inv.get_master_private_ip()
-##    print "hadoop datanode private IP: " + ', '.join(heat_inv.get_datanode_private_ips())
-##    print "hadoop datanode public IP: " + ', '.join(heat_inv.get_datanode_public_ips())
-    inventory_path = os.path.join('ansible','inventory')
-    inventory_file = open(os.path.join(inventory_path, 'hosts-pro'), 'w')
-    nodes_file = open(os.path.join(inventory_path, 'nodes-pro'), 'w')
-    inventory_file.write(heat_inv.get_hosts_output())
-    nodes_file.write(heat_inv.get_nodes_output())
-    inventory_file.close()
-    nodes_file.close()
-    # keyscan_script_file = open('scan-node-keys.sh', 'w')
-    # keyscan_script_file.write(heat_inv.get_node_keyscan_script())
-    # keyscan_script_file.close()
+    syncer = InventorySyncer()
+    syncer.update_master_setup_inventory()
+    print('Updated inventory for master setup.')
+    syncer.update_hadoop_setup_inventory()
+    print('Updated inventory for hadoop setup.')
 
 if __name__ == '__main__':
     main()

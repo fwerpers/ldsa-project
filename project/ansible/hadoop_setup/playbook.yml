@@ -1,14 +1,4 @@
 ---
-- name: Install python master node
-  hosts: hadoop-master
-  remote_user: ubuntu
-  become: yes
-  gather_facts: False
-
-  tasks:
-  - name: Install python
-    raw: test -e /usr/bin/python || (apt-get install -y python3 python-simplejson)
-
 - name: Install hadoop master node
   hosts: hadoop-master
   remote_user: ubuntu
@@ -18,6 +8,16 @@
     - common
     - oraclejava8
     - master
+
+- name: Install python data node
+  hosts: hadoop-data
+  remote_user: ubuntu
+  become: yes
+  gather_facts: False
+
+  tasks:
+  - name: Install python
+    raw: test -e /usr/bin/python || (apt-get install -y python3 python-simplejson)
 
 - name: Install hadoop data nodes
   hosts: hadoop-data

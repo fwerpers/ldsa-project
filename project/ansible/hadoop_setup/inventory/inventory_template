@@ -5,4 +5,4 @@ localhost ansible_connection=local
 $node_hosts
 
 [hadoop-data:vars]
-nodesfile=nodes
+nodesfile=$nodes_path

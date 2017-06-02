@@ -6,11 +6,55 @@
   gather_facts: False
 
   tasks:
+  - include_vars: "{{ nodesfile }}"
+
   - name: Install python
     raw: test -e /usr/bin/python || (apt-get install -y python3 python-simplejson)
+
   - name: Copy Openstack password
     lineinfile: dest=/home/ubuntu/.bashrc line="export SNIC_PW={{ lookup('env', 'SNIC_PW') }}"
-  - name: Copy private key
-    copy: src={{ key_path }} dest=/home/hadoop/.ssh/hadoop_key.pem
+
+  - name: Copy private key for ansible communication
+    copy: src={{ key_path }} dest=/home/ubuntu/.ssh/hadoop_key.pem
+
+  - name: Build hosts file
+    lineinfile: dest=/etc/hosts regexp='{{ item.ip }}' line="{{ item.ip }} {{ item.hostname }}" state=present
+    with_items: "{{ nodes }}"
+
+  # - name: Add known hosts
+  #   shell: ssh-keyscan -t rsa {{ item.hostname }}
+  #   with_items: "{{ nodes }}"
+
+  - name: prepare known_hosts entries
+    shell: ssh-keyscan -t rsa {{ item.ip }}
+    with_items: "{{ nodes }}"
+    register: keyscans
+
+  - name: prepare known_hosts
+    lineinfile:
+      dest=/home/ubuntu/.ssh/known_hosts
+      create=yes
+      state=present
+      line="{{ item.stdout }}"
+      regexp="^{{ item.item.ip }}"
+      owner=ubuntu
+      group=ubuntu
+    with_items: "{{ keyscans.results }}"
+
+  - name: Add more to hosts file
+    lineinfile: dest=/etc/hosts regexp='127.0.1.1' state=absent
+
   - name: Copy ansible files
-    synchronize: src={{ playbook_dir }}/slave_setup/ dest=/home/hadoop/ansible
+    synchronize: src={{ playbook_dir }}/../hadoop_setup dest=/home/ubuntu/ansible perms=no owner=no group=no
+
+  - name: Install ansible
+    shell: apt-get install -y software-properties-common
+
+  - name: Install ansible
+    shell: apt-add-repository ppa:ansible/ansible
+
+  - name: Install ansible
+    shell: apt-get update
+
+  - name: Install ansible
+    shell: apt-get install -y ansible

@@ -3,3 +3,4 @@ $master_host
 
 [hadoop-master:vars]
 key_path=$key_path
+nodesfile=$nodes_path
