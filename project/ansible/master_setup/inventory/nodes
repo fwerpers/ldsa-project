@@ -1,8 +1,0 @@
----
-nodes:
-- hostname: hadoop-master
-  ip: 192.168.1.77
-- hostname: hadoop-data-0
-  ip: 192.168.1.94
-- hostname: hadoop-data-1
-  ip: 192.168.1.96
