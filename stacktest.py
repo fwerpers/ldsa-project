@@ -1,5 +1,7 @@
 import os
 from openstack import connection
+import yaml
+import json
 
 def create_connection():
     auth_args = {
@@ -19,11 +21,37 @@ def main():
     conn = create_connection()
     #help(conn.network)
     #help(conn.orchestration)
-    a = conn.orchestration.get_stack('DontDeleteMyStackBro')
-    b = conn.orchestration.check_stack(a)
-    d = {'hej':'asd', 'botte':4, 'das':5}
-    conn.orchestration.update_stack(a, template_file='project/HPC2N/heat-hadoop-cluster.yaml')
-    #help(conn.orchestration.update_stack)
+
+    stack = conn.orchestration.get_stack('DontDeleteMyStackBro')
+
+    heat_path = os.path.join('HPC2N', 'heat-hadoop-cluster.yaml')
+    # with open(heat_path, 'r') as f:
+    #     d = yaml.load(f)
+    # print(d['resources'])
+    #
+    # print(type(d))
+    # print(len(d.keys()))
+
+    # template_json = json.dumps(d)
+    # a = json.loads(template_json)
+    # print(type(a))
+    # print(len(a.keys()))
+    # print(template_json)
+
+    # with open(heat_path, 'r') as f:
+    #     temp = f.read()
+    #conn.orchestration.update_stack(stack, template=temp)
+
+    # params = stack.parameters
+    # print(params)
+
+    heat_path2 = os.path.join('HPC2N', 'heat-datanode.yaml')
+    with open(heat_path2, 'r') as f:
+        temp = f.read()
+    with open(heat_path, 'r') as f:
+        temp2 = f.read()
+    conn.orchestration.validate_template(template=temp)
+    conn.orchestration.create_stack(template=temp2, name='kalle')
 
 if __name__ == '__main__':
     main()
