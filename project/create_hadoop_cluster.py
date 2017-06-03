@@ -16,6 +16,9 @@ ANSIBLE_SSH_USER = "ubuntu"
 ANSIBLE_SSH_PRIVATE_KEY_FILE = "~/.ssh/hadoop_key.pem"
 HOST_TEMPLATE = Template('$ipaddress ansible_connection=ssh ansible_user=$ssh_user ansible_ssh_private_key_file=$private_key_file')
 
+# def source_credentials():
+#     subprocess.Popen("source ", shell=True).wait()
+
 def create_os_connection():
     auth_args = {
         'auth_url': os.environ['OS_AUTH_URL'],
@@ -68,7 +71,6 @@ class InventorySyncer:
         while True:
             line = subprocess.Popen("ssh-keyscan -t rsa " + ip_address, shell=True, stdout=subprocess.PIPE).stdout.read()
             if line != '':
-                print(line)
                 break
         subprocess.Popen("ssh-keyscan -t rsa " + ip_address + " >> ~/.ssh/known_hosts", shell=True).wait()
 
@@ -167,6 +169,20 @@ def set_up_hadoop():
     args = ['ssh', 'ubuntu@' + ip, '-i', key_path, 'python ansible/hadoop_setup/setup_hadoop.py']
     subprocess.call(args)
 
+def start_hadoop():
+    print('Starting Hadoop services')
+    conn = create_os_connection()
+    stack = conn.orchestration.get_stack('DontDeleteMyStackBro')
+    stack_info = get_stack_info(stack)
+    ip = stack_info.get(HADOOP_MASTER_PUBLIC_KEY)
+    #key_path = utils.get_key_path()
+    #key_path = os.path.join('ansible', 'hadoop_setup', 'roles', 'master', 'templates', 'hadoop_rsa')
+    key_path = os.path.join(os.environ['HOME'], 'Desktop', 'hadoop_rsa')
+
+    paramiko
+    args = ['ssh', '-A', 'hadoop@' + ip, '-i', key_path, 'bash /home/ubuntu/ansible/hadoop_setup/start_hadoop.sh']
+    subprocess.call(args)
+
 def main():
     create_stack()
     syncer = InventorySyncer()
@@ -176,6 +192,8 @@ def main():
     print('Updated inventory for hadoop setup.')
     set_up_master()
     set_up_hadoop()
+
+    #start_hadoop()
 
 if __name__ == '__main__':
     main()
