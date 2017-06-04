@@ -179,8 +179,8 @@ def start_hadoop():
     #key_path = os.path.join('ansible', 'hadoop_setup', 'roles', 'master', 'templates', 'hadoop_rsa')
     key_path = os.path.join(os.environ['HOME'], 'Desktop', 'hadoop_rsa')
 
-    paramiko
-    args = ['ssh', '-A', 'hadoop@' + ip, '-i', key_path, 'bash /home/ubuntu/ansible/hadoop_setup/start_hadoop.sh']
+    #args = ['ssh', 'hadoop@' + ip, '-i', key_path, 'bash /home/ubuntu/ansible/hadoop_setup/start_hadoop.sh']
+    args = ['ssh', 'hadoop@' + ip, '-i', key_path, 'env']
     subprocess.call(args)
 
 def main():
